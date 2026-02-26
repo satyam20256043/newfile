@@ -3,41 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebSocket Example</title>
+    <title>Stock Trading Simulator</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        #dashboard { margin: 20px; }
+        #trading-panel { margin: 20px; }
+        #leaderboard { margin: 20px; }
+        #admin-controls { margin: 20px; }
+    </style>
 </head>
 <body>
-    <h1>WebSocket Client</h1>
-    <button id="connect">Connect</button>
-    <button id="disconnect" disabled>Disconnect</button>
-    <pre id="messages"></pre>
 
-    <script>
-        let socket;
-        const messages = document.getElementById('messages');
+<div id="dashboard">
+    <h1>Stock Trading Dashboard</h1>
+    <div id="stock-prices"></div>
+</div>
 
-        document.getElementById('connect').onclick = () => {
-            socket = new WebSocket('ws://localhost:8080');
+<div id="trading-panel">
+    <h2>Trading Panel</h2>
+    <input type="text" id="stock-symbol" placeholder="Stock Symbol">
+    <input type="number" id="amount" placeholder="Amount">
+    <button id="buy-button">Buy</button>
+    <button id="sell-button">Sell</button>
+</div>
 
-            socket.onopen = () => {
-                messages.textContent += 'Connected to WebSocket\n';
-                document.getElementById('connect').disabled = true;
-                document.getElementById('disconnect').disabled = false;
-            };
+<div id="leaderboard">
+    <h2>Leaderboard</h2>
+    <ul id="leaderboard-list"></ul>
+</div>
 
-            socket.onmessage = event => {
-                messages.textContent += 'Message from server: ' + event.data + '\n';
-            };
+<div id="admin-controls">
+    <h2>Admin Controls</h2>
+    <button id="reset-button">Reset Simulator</button>
+</div>
 
-            socket.onclose = () => {
-                messages.textContent += 'Disconnected from WebSocket\n';
-                document.getElementById('connect').disabled = false;
-                document.getElementById('disconnect').disabled = true;
-            };
-        };
+<script>
+    const socket = new WebSocket('ws://your-websocket-url-here');
 
-        document.getElementById('disconnect').onclick = () => {
-            socket.close();
-        };
-    </script>
+    socket.onopen = function() {
+        console.log('WebSocket connection established');
+    };
+
+    socket.onmessage = function(event) {
+        const message = JSON.parse(event.data);
+        // Handle incoming messages (e.g., stock prices, trades, etc.)
+        updateStockPrices(message.stockPrices);
+        updateLeaderboard(message.leaderboard);
+    };
+
+    document.getElementById('buy-button').onclick = function() {
+        const symbol = document.getElementById('stock-symbol').value;
+        const amount = document.getElementById('amount').value;
+        socket.send(JSON.stringify({ type: 'trade', action: 'buy', symbol, amount }));
+    };
+
+    document.getElementById('sell-button').onclick = function() {
+        const symbol = document.getElementById('stock-symbol').value;
+        const amount = document.getElementById('amount').value;
+        socket.send(JSON.stringify({ type: 'trade', action: 'sell', symbol, amount }));
+    };
+
+    document.getElementById('reset-button').onclick = function() {
+        socket.send(JSON.stringify({ type: 'reset' }));
+    };
+
+    function updateStockPrices(prices) {
+        const stockPricesDiv = document.getElementById('stock-prices');
+        stockPricesDiv.innerHTML = '';
+        for (const symbol in prices) {
+            stockPricesDiv.innerHTML += `<div>${symbol}: ${prices[symbol]}</div>`;
+        }
+    }
+
+    function updateLeaderboard(leaderboard) {
+        const leaderboardList = document.getElementById('leaderboard-list');
+        leaderboardList.innerHTML = '';
+        leaderboard.forEach(player => {
+            leaderboardList.innerHTML += `<li>${player.name}: ${player.balance}</li>`;
+        });
+    }
+</script>
+
 </body>
 </html>
